@@ -9,8 +9,8 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 800
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Jumping in PyGame")
 Y_GROUND_POSITION = 660
-X_POSITION, Y_POSITION = 400, Y_GROUND_POSITION
-JUMP_HEIGHT = 20
+X_POSITION, Y_POSITION = 400, Y_GROUND_POSITION  # start on ground, top-left
+JUMP_SPEED = -20
 Y_GRAVITY = 0.6
 X_SPEED = 5
 MARIO_WIDTH, MARIO_HEIGHT = 48, 64
@@ -18,18 +18,12 @@ MARIO_WIDTH, MARIO_HEIGHT = 48, 64
 # Game Variables
 current_direction = "right"
 jumping = False
-y_velocity = JUMP_HEIGHT
-
+y_velocity = 0
 
 # Asset Loading
 def load_image(path, size):
     return pygame.transform.scale(pygame.image.load(path), size)
 
-
-# Constants for dimensions
-MARIO_WIDTH, MARIO_HEIGHT = 48, 64
-
-# Usage of constants in asset loading
 STANDING_SURFACE_RIGHT = load_image("assets/mario_standing_right.png", (MARIO_WIDTH, MARIO_HEIGHT))
 STANDING_SURFACE_LEFT = load_image("assets/mario_standing_left.png", (MARIO_WIDTH, MARIO_HEIGHT))
 JUMPING_SURFACE_RIGHT = load_image("assets/mario_jumping_right.png", (MARIO_WIDTH, MARIO_HEIGHT))
@@ -37,24 +31,17 @@ JUMPING_SURFACE_LEFT = load_image("assets/mario_jumping_left.png", (MARIO_WIDTH,
 PLATFORM = load_image("assets/platform.jpg", (MARIO_WIDTH * 4, MARIO_HEIGHT))
 BACKGROUND = pygame.image.load("assets/background.png")
 
-# Current Position Rectangle
+# Rectangles
 mario_rect = STANDING_SURFACE_RIGHT.get_rect(center=(X_POSITION, Y_POSITION))
-
 platform_rect =  PLATFORM.get_rect(center=(SCREEN_WIDTH/2, 460))
 
 # Helper Functions
-def update_position(direction, x, y):
+def update_position(direction, x, y, jumping):
     """Update Mario's position and return new rectangle and surface."""
     if direction == "right":
-        if not jumping:
-            surface = STANDING_SURFACE_RIGHT
-        else:
-            surface = JUMPING_SURFACE_RIGHT
+        surface = JUMPING_SURFACE_RIGHT if jumping else STANDING_SURFACE_RIGHT
     else:
-        if not jumping:
-            surface = STANDING_SURFACE_LEFT
-        else:
-            surface = JUMPING_SURFACE_LEFT
+        surface = JUMPING_SURFACE_LEFT if jumping else STANDING_SURFACE_LEFT
     rect = surface.get_rect(center=(x, y))
     return rect, surface
 
@@ -69,22 +56,34 @@ def handle_movement(keys, x, direction):
         direction = "right"
     return x, direction
 
-
-def handle_jumping(keys, jumping, y_velocity, y_position):
+def handle_jumping(keys, _jumping, _y_velocity, _y_position, _player_rect, _platform_rect):
     """Handle Mario's jumping logic and return updated values."""
-    if keys[pygame.K_SPACE] and not jumping:
-        jumping = True
+    # Start jump
+    if keys[pygame.K_SPACE] and not _jumping:
+        _y_velocity = JUMP_SPEED
+        _jumping = True
 
-    if jumping:
-        y_velocity -= Y_GRAVITY
-        y_position -= y_velocity
-        if y_velocity < -JUMP_HEIGHT:
-            jumping = False
-            y_velocity = JUMP_HEIGHT
-            y_position = Y_GROUND_POSITION  # Reset to ground
+    # Gravity
+    _y_velocity += Y_GRAVITY
+    _y_position += _y_velocity
+    _player_rect.topleft = (_player_rect.x, _y_position)
 
-    return jumping, y_velocity, y_position
+    # Platform collision (only when falling)
+    print(_y_velocity)
 
+    if _player_rect.colliderect(platform_rect) and _y_velocity >= 0:
+        if platform_rect.left <= _player_rect.centerx <= platform_rect.right:
+            _y_position = platform_rect.top - MARIO_HEIGHT / 2
+            _y_velocity = 0
+            _jumping = False
+
+    # Ground collision (only when falling)
+    elif _player_rect.bottom >= Y_GROUND_POSITION and _y_velocity >= 0:
+        _y_position = Y_GROUND_POSITION
+        _y_velocity = 0
+        _jumping = False
+
+    return _jumping, _y_velocity, _y_position
 
 # Main Game Loop
 while True:
@@ -95,12 +94,14 @@ while True:
 
     keys_pressed = pygame.key.get_pressed()
 
-    jumping, y_velocity, Y_POSITION = handle_jumping(keys_pressed, jumping, y_velocity, Y_POSITION)
+    jumping, y_velocity, Y_POSITION = handle_jumping(
+        keys_pressed, jumping, y_velocity, Y_POSITION, mario_rect, platform_rect
+    )
     X_POSITION, current_direction = handle_movement(keys_pressed, X_POSITION, current_direction)
 
     # Draw Everything
     SCREEN.blit(BACKGROUND, (0, 0))
-    mario_rect, mario_surface = update_position(current_direction, X_POSITION, Y_POSITION)
+    mario_rect, mario_surface = update_position(current_direction, X_POSITION, Y_POSITION, jumping)
     SCREEN.blit(mario_surface, mario_rect)
     SCREEN.blit(PLATFORM, platform_rect)
 
