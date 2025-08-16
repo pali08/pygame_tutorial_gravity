@@ -34,11 +34,13 @@ STANDING_SURFACE_RIGHT = load_image("assets/mario_standing_right.png", (MARIO_WI
 STANDING_SURFACE_LEFT = load_image("assets/mario_standing_left.png", (MARIO_WIDTH, MARIO_HEIGHT))
 JUMPING_SURFACE_RIGHT = load_image("assets/mario_jumping_right.png", (MARIO_WIDTH, MARIO_HEIGHT))
 JUMPING_SURFACE_LEFT = load_image("assets/mario_jumping_left.png", (MARIO_WIDTH, MARIO_HEIGHT))
+PLATFORM = load_image("assets/platform.jpg", (MARIO_WIDTH * 4, MARIO_HEIGHT))
 BACKGROUND = pygame.image.load("assets/background.png")
 
 # Current Position Rectangle
 mario_rect = STANDING_SURFACE_RIGHT.get_rect(center=(X_POSITION, Y_POSITION))
 
+platform_rect =  PLATFORM.get_rect(center=(SCREEN_WIDTH/2, 460))
 
 # Helper Functions
 def update_position(direction, x, y):
@@ -100,6 +102,7 @@ while True:
     SCREEN.blit(BACKGROUND, (0, 0))
     mario_rect, mario_surface = update_position(current_direction, X_POSITION, Y_POSITION)
     SCREEN.blit(mario_surface, mario_rect)
+    SCREEN.blit(PLATFORM, platform_rect)
 
     pygame.display.update()
     CLOCK.tick(60)
