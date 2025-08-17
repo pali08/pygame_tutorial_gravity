@@ -59,15 +59,9 @@ def handle_movement(keys, x, direction):
 def handle_jumping(keys, _jumping, _y_velocity, _y_position, _player_rect, _platform_rect):
     """Handle Mario's jumping logic and return updated values."""
     # Start jump
-    print(_y_velocity)
-    # Can only jump if standing on ground/platform
-    on_ground = (_player_rect.bottom >= Y_GROUND_POSITION) or (
-            _player_rect.colliderect(_platform_rect)
-            and _platform_rect.left <= _player_rect.centerx <= _platform_rect.right
-            and _player_rect.bottom <= _platform_rect.top + 5  # small tolerance
-    )
-
-    if keys[pygame.K_SPACE] and on_ground:
+    # when falling, y_velocity is bigger than zero. y_velocity <= 0 assures, that we cannot jump while falling
+    # i.e. jumping without platform under player
+    if keys[pygame.K_SPACE] and not _jumping and _y_velocity <= 0:
         _y_velocity = JUMP_SPEED
         _jumping = True
 
@@ -77,8 +71,6 @@ def handle_jumping(keys, _jumping, _y_velocity, _y_position, _player_rect, _plat
     _player_rect.topleft = (_player_rect.x, _y_position)
 
     # Platform collision (only when falling)
-    print(_y_velocity)
-
     if _player_rect.colliderect(platform_rect) and _y_velocity >= 0:
         if platform_rect.left <= _player_rect.centerx <= platform_rect.right:
             _y_position = platform_rect.top - MARIO_HEIGHT / 2
